@@ -1,15 +1,16 @@
 import dotenv from "dotenv";
-import OpenAI from "openai";
-import fs from "fs";
 
 dotenv.config();
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const API_KEY = process.env.GEMINI_API_KEY;
 
-// 🔁 CHANGE THIS to test different prompts
-const SYSTEM_PROMPT = `
+// ✅ IMPORTANT: NO "models/" PREFIX HERE
+const MODEL = "gemini-2.5-flash";
+
+const url =
+  `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${API_KEY}`;
+
+const prompt = `
 You are a resume-job matching assistant.
 
 You will receive:
@@ -19,24 +20,17 @@ You will receive:
 Your task:
 - Evaluate how well the resume matches the job posting.
 - Be conservative and realistic in scoring.
-- If major required skills are missing, score below 50.
+- If multiple major required skills are missing, score below 50.
+- If only one commonly expected skill is missing, score between 55 and 70.
 
-Scoring guidelines:
-- 80–100: Most required skills and experience present
-- 60–79: Partial match with some gaps
-- 40–59: Significant gaps
-- Below 40: Poor match
 
-Output strictly in valid JSON using this structure:
+Output ONLY valid JSON in this exact format:
 {
   "score": number,
   "missing_skills": [],
   "missing_keywords": []
 }
-`;
 
-// 🔁 CHANGE THIS to paste different test cases
-const USER_INPUT = `
 RESUME:
 Bachelor of Computer Science, University of Windsor (2022–2026)
 Software Engineering Intern, TechNova
@@ -49,17 +43,50 @@ Experience with REST APIs and Git is required.
 `;
 
 async function run() {
-  const response = await client.chat.completions.create({
-    model: "gpt-4.1-mini",
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: USER_INPUT }
-    ],
-    temperature: 0.2
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: prompt }],
+        },
+      ],
+    }),
   });
 
+  const raw = await res.text();
+
+  if (!res.ok) {
+    console.error("HTTP ERROR:", res.status, res.statusText);
+    console.error("RAW RESPONSE:");
+    console.error(raw);
+    process.exit(1);
+  }
+
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    console.error("FAILED TO PARSE JSON");
+    console.error("RAW RESPONSE:");
+    console.error(raw);
+    process.exit(1);
+  }
+
+  const text =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text) {
+    console.error("NO MODEL OUTPUT");
+    console.error(JSON.stringify(data, null, 2));
+    process.exit(1);
+  }
+
   console.log("\n=== AI OUTPUT ===\n");
-  console.log(response.choices[0].message.content);
+  console.log(text);
 }
 
 run();
