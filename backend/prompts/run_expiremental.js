@@ -11,24 +11,27 @@ const url =
   `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${API_KEY}`;
 
 const prompt = `
-You are a resume-job matching assistant.
+SYSTEM INSTRUCTIONS (STRICT):
+- You MUST return ONLY raw JSON.
+- Do NOT include markdown, comments, or explanations.
+- Do NOT wrap the output in \`\`\`.
+- If you violate the format, the response is invalid.
 
-You will receive:
-1) A resume
-2) A job posting
+SCORING RULES:
+- score MUST be an integer between 0 and 100.
+- If 2 or more REQUIRED skills are missing → score < 50.
+- If exactly 1 commonly expected skill is missing → score between 55 and 70.
+- If no required skills are missing → score >= 75.
 
-Your task:
-- Evaluate how well the resume matches the job posting.
-- Be conservative and realistic in scoring.
-- If multiple major required skills are missing, score below 50.
-- If only one commonly expected skill is missing, score between 55 and 70.
+DEFINITIONS:
+- missing_skills = concrete technical tools or technologies explicitly required (e.g. Git, Docker, SQL).
+- missing_keywords = job-relevant terms not found verbatim in the resume but implied by the role.
 
-
-Output ONLY valid JSON in this exact format:
+OUTPUT FORMAT (EXACT):
 {
   "score": number,
-  "missing_skills": [],
-  "missing_keywords": []
+  "missing_skills": string[],
+  "missing_keywords": string[]
 }
 
 RESUME:
@@ -42,19 +45,24 @@ Junior Software Developer with experience in JavaScript, React, and Node.js.
 Experience with REST APIs and Git is required.
 `;
 
+
 async function run() {
   const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [{ text: prompt }],
-        },
-      ],
-    }),
+   body: JSON.stringify({
+  contents: [
+    {
+      parts: [{ text: prompt }],
+    },
+  ],
+  generationConfig: {
+    temperature: 0.2,
+  },
+}),
+
   });
 
   const raw = await res.text();
