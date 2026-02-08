@@ -1,3 +1,4 @@
+// App.jsx
 import "./App.css";
 import { useState } from "react";
 import TextAreaBlock from "./Components/textAreaBlock";
@@ -12,8 +13,10 @@ function BuilderPage() {
   const [projects, setProjects] = useState("");
   const [skills, setSkills] = useState("");
   const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
+    setLoading(true);
     setResult("Generating resume...");
 
     try {
@@ -24,10 +27,13 @@ function BuilderPage() {
         skills,
       });
 
-      setResult(res.data.latex); // ✅ LaTeX string
+      // expects backend returns: { latex: "..." }
+      setResult(res.data.latex);
     } catch (error) {
       console.error(error);
       setResult("Something went wrong.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,7 +57,13 @@ function BuilderPage() {
       <TextAreaBlock label="Projects" value={projects} onChange={setProjects} />
       <TextAreaBlock label="Skills" value={skills} onChange={setSkills} />
 
-      <button onClick={handleGenerate}>Generate Resume</button>
+      <button
+        onClick={handleGenerate}
+        className={`loading-btn ${loading ? "is-loading" : ""}`}
+        disabled={loading}
+      >
+        {loading ? "Generating..." : "Generate Resume"}
+      </button>
 
       <OutputBox title="Generated Resume (LaTeX)" content={result} />
 
@@ -69,8 +81,10 @@ function TailorPage() {
   const [resume, setResume] = useState("");
   const [job, setJob] = useState("");
   const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleTailor = async () => {
+    setLoading(true);
     setResult("Tailoring resume...");
 
     try {
@@ -107,6 +121,8 @@ function TailorPage() {
     } catch (err) {
       console.error(err);
       setResult("Error tailoring resume.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -117,7 +133,13 @@ function TailorPage() {
       <TextAreaBlock label="Your Current Resume" value={resume} onChange={setResume} />
       <TextAreaBlock label="Job Posting" value={job} onChange={setJob} />
 
-      <button onClick={handleTailor}>Tailor Resume</button>
+      <button
+        onClick={handleTailor}
+        className={`loading-btn ${loading ? "is-loading" : ""}`}
+        disabled={loading}
+      >
+        {loading ? "Tailoring..." : "Tailor Resume"}
+      </button>
 
       <OutputBox title="Tailored Resume" content={result} />
     </div>
@@ -129,8 +151,10 @@ function MatchPage() {
   const [resume, setResume] = useState("");
   const [job, setJob] = useState("");
   const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleMatch = async () => {
+    setLoading(true);
     setResult("Analyzing match...");
 
     try {
@@ -138,11 +162,15 @@ function MatchPage() {
       const data = res.data;
 
       setResult(
-        `Match Score: ${data.score}\n\nMissing Skills:\n${(data.missing_skills || []).join("\n")}`
+        `Match Score: ${data.score}\n\nMissing Skills:\n${(data.missing_skills || []).join(
+          "\n"
+        )}`
       );
     } catch (err) {
       console.error(err);
       setResult("Error analyzing match.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -153,7 +181,13 @@ function MatchPage() {
       <TextAreaBlock label="Your Resume" value={resume} onChange={setResume} />
       <TextAreaBlock label="Job Posting" value={job} onChange={setJob} />
 
-      <button onClick={handleMatch}>Analyze Match</button>
+      <button
+        onClick={handleMatch}
+        className={`loading-btn ${loading ? "is-loading" : ""}`}
+        disabled={loading}
+      >
+        {loading ? "Analyzing..." : "Analyze Match"}
+      </button>
 
       <OutputBox title="Match Analysis" content={result} />
     </div>
