@@ -94,6 +94,7 @@ function TailorPage() {
 
 
       setResult(res.data.resume);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       setResult("Error tailoring resume.");
     }
@@ -140,6 +141,7 @@ function MatchPage() {
           "\n"
         )}`
       );
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       setResult("Error analyzing match.");
     }
