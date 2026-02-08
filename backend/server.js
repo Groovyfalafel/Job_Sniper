@@ -1,8 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+
 import matchRoute from "./routes/match.js";
 import tailorRoute from "./routes/tailor.js";
+import buildRoute from "./routes/build.js";
 
 console.log("RUNNING FROM CWD:", process.cwd());
 console.log("SERVER FILE:", new URL(import.meta.url).pathname);
@@ -24,6 +26,7 @@ app.use((req, res, next) => {
 
 app.use("/match-resume", matchRoute);
 app.use("/tailor-resume", tailorRoute);
+app.use("/build-resume", buildRoute);
 
 app.get("/", (req, res) => {
   res.send("Server is running");

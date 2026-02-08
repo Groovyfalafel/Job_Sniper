@@ -6,7 +6,7 @@ const MODEL = "gemini-2.5-flash";
 
 if (!API_KEY) throw new Error("❌ GEMINI_API_KEY is missing");
 
-async function callGemini(prompt) {
+async function callGeminiJSON(prompt) {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${API_KEY}`,
     {
@@ -47,7 +47,7 @@ ${resume}
 JOB POSTING:
 ${job}
 `;
-  return callGemini(prompt);
+  return callGeminiJSON(prompt);
 }
 
 export async function tailorResume(resume, job) {
@@ -75,5 +75,44 @@ ${resume}
 JOB POSTING:
 ${job}
 `;
-  return callGemini(prompt);
+  return callGeminiJSON(prompt);
+}
+
+export async function buildResume({ education = "", experience = "", projects = "", skills = "" }) {
+  const prompt = `
+You are a resume generator.
+
+Goal:
+- Generate a clean, ATS-friendly one-page resume in LaTeX from the user's input sections.
+
+Hard rules:
+- DO NOT invent experience/tools/degrees/projects not present in the input.
+- You MAY rewrite/reorder for clarity and impact.
+- Output ONLY valid JSON in this exact format:
+{
+  "latex": "string"
+}
+
+LaTeX requirements:
+- Return a COMPLETE compilable LaTeX document:
+  \\documentclass ... \\begin{document} ... \\end{document}
+- Use only simple packages: geometry, enumitem, hyperref
+- Use \\section* headings and itemize bullets
+- Escape LaTeX special characters
+
+INPUT:
+
+EDUCATION:
+${education}
+
+EXPERIENCE:
+${experience}
+
+PROJECTS:
+${projects}
+
+SKILLS:
+${skills}
+`;
+  return callGeminiJSON(prompt);
 }

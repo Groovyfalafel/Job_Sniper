@@ -13,7 +13,6 @@ function BuilderPage() {
   const [skills, setSkills] = useState("");
   const [result, setResult] = useState("");
 
-
   const handleGenerate = async () => {
     setResult("Generating resume...");
 
@@ -25,7 +24,7 @@ function BuilderPage() {
         skills,
       });
 
-      setResult(res.data.resume);
+      setResult(res.data.latex); // ✅ LaTeX string
     } catch (error) {
       console.error(error);
       setResult("Something went wrong.");
@@ -33,25 +32,12 @@ function BuilderPage() {
   };
 
   const downloadResume = () => {
-    const fullResume = `
-EDUCATION
-${education}
-
-EXPERIENCE
-${experience}
-
-PROJECTS
-${projects}
-
-SKILLS
-${skills}
-    `;
-    const blob = new Blob([fullResume.trim()], { type: "text/plain" });
+    const blob = new Blob([result || ""], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = "resume.txt";
+    a.download = "resume.tex";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -59,6 +45,7 @@ ${skills}
   return (
     <div className="home">
       <h2>Resume Builder</h2>
+
       <TextAreaBlock label="Education" value={education} onChange={setEducation} />
       <TextAreaBlock label="Experience" value={experience} onChange={setExperience} />
       <TextAreaBlock label="Projects" value={projects} onChange={setProjects} />
@@ -66,7 +53,7 @@ ${skills}
 
       <button onClick={handleGenerate}>Generate Resume</button>
 
-      <OutputBox title="Generated Resume" content={result} />
+      <OutputBox title="Generated Resume (LaTeX)" content={result} />
 
       {result && (
         <button onClick={downloadResume} style={{ marginTop: 12 }}>
@@ -87,15 +74,38 @@ function TailorPage() {
     setResult("Tailoring resume...");
 
     try {
-      const res = await api.post("/tailor-resume", {
-        resume,
-        job,
-      });
+      const res = await api.post("/tailor-resume", { resume, job });
+      const data = res.data;
 
+      const summary = data?.tailored_summary ?? "";
+      const bullets = Array.isArray(data?.tailored_bullets) ? data.tailored_bullets : [];
+      const keywords = Array.isArray(data?.keywords_to_add) ? data.keywords_to_add : [];
+      const missing = Array.isArray(data?.missing_skills) ? data.missing_skills : [];
 
-      setResult(res.data.resume);
-    // eslint-disable-next-line no-unused-vars
+      const formatted = [
+        "TAILORED SUMMARY",
+        summary || "(none)",
+        "",
+        "REWRITTEN BULLETS",
+        bullets.length
+          ? bullets
+              .map(
+                (b, idx) =>
+                  `${idx + 1}. ORIGINAL: ${b.original}\n   REWRITE:  ${b.rewritten}`
+              )
+              .join("\n\n")
+          : "(none)",
+        "",
+        "KEYWORDS TO ADD",
+        keywords.length ? keywords.join(", ") : "(none)",
+        "",
+        "MISSING SKILLS",
+        missing.length ? missing.join(", ") : "(none)",
+      ].join("\n");
+
+      setResult(formatted);
     } catch (err) {
+      console.error(err);
       setResult("Error tailoring resume.");
     }
   };
@@ -105,12 +115,7 @@ function TailorPage() {
       <h2>Resume Tailor</h2>
 
       <TextAreaBlock label="Your Current Resume" value={resume} onChange={setResume} />
-
-      <TextAreaBlock
-        label="Job Posting"
-        value={job}
-        onChange={setJob}
-      />
+      <TextAreaBlock label="Job Posting" value={job} onChange={setJob} />
 
       <button onClick={handleTailor}>Tailor Resume</button>
 
@@ -129,20 +134,14 @@ function MatchPage() {
     setResult("Analyzing match...");
 
     try {
-      const res = await api.post("/match-resume", {
-        resume,
-        job,
-      });
-
+      const res = await api.post("/match-resume", { resume, job });
       const data = res.data;
 
       setResult(
-        `Match Score: ${data.score}\n\nMissing Skills:\n${data.missing_skills.join(
-          "\n"
-        )}`
+        `Match Score: ${data.score}\n\nMissing Skills:\n${(data.missing_skills || []).join("\n")}`
       );
-    // eslint-disable-next-line no-unused-vars
     } catch (err) {
+      console.error(err);
       setResult("Error analyzing match.");
     }
   };
@@ -152,12 +151,7 @@ function MatchPage() {
       <h2>Resume ↔ Job Match</h2>
 
       <TextAreaBlock label="Your Resume" value={resume} onChange={setResume} />
-
-      <TextAreaBlock
-        label="Job Posting"
-        value={job}
-        onChange={setJob}
-      />
+      <TextAreaBlock label="Job Posting" value={job} onChange={setJob} />
 
       <button onClick={handleMatch}>Analyze Match</button>
 
@@ -172,14 +166,11 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Background papers */}
       <div className="paper-bg" />
 
-      {/* Foreground content */}
       <div className="app-content">
         <div className="title-wrapper">
           <h1>Job Sniper</h1>
-          
         </div>
 
         <div className="nav-buttons">
@@ -197,7 +188,5 @@ function App() {
     </div>
   );
 }
-
-
 
 export default App;
